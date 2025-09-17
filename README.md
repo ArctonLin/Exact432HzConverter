@@ -31,10 +31,10 @@
 ![figure1](AllFormatConverted.png "AllFormatConvertSuccess")
 
 ### Algorithm Description:
-1.Doing FFT on front 100 seconds of PCM RAW data.
-2.Loop Freq from 424Hz to 448Hz, step 0.1Hz.
-2a. Shift 440Hz tone frequency table to each Freq,
-2b. Find the location of each tone frequency table’s location of FFT data.
-2c. Calculate the sum of each location in FFT data.
-3. Find the max sum of each Freq.
-4. Output final maxFreq which is the current Tone frequency.
+ 1.Doing FFT on front 100 seconds of PCM RAW data.
+ 2.Loop Freq from 424Hz to 448Hz, step 0.1Hz.
+ 2a. Shift 440Hz tone frequency table to each Freq,
+ 2b. Find the location of each tone frequency table’s location of FFT data.
+ 2c. Calculate the sum of each location in FFT data.
+ 3. Find the max sum of each Freq.
+ 4. Output final maxFreq which is the current Tone frequency.
