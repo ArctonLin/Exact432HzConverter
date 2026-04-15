@@ -247,11 +247,18 @@ def ffmpeg_speed_transform(filename, new_filename, target_sampling_rate, target_
 
     try:
         # Launch the FFmpeg process
-        process = subprocess.Popen(ffmpeg_command, creationflags=subprocess.CREATE_NO_WINDOW)
+        kwargs = {}
+        if os.name == 'nt':
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+
+        process = subprocess.Popen(ffmpeg_command, **kwargs)
 
         # Use psutil to set the process priority to below normal
         p = psutil.Process(process.pid)
-        p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        if os.name == 'nt':
+            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            p.nice(10)  # Standard nice value for below normal priority on Unix-like systems
 
         # Wait for the process to complete
         process.wait()
