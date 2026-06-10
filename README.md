@@ -5,8 +5,10 @@
 
 - Convert function provide exact 432Hz converter that convert all audio files into 432Hz (most is 440Hz to 432Hz)
 
+- Add Transform Mode: Pitch (change tone without change playback duration) or Speed (change tone by change playback speed and the duration of file will be longer)
+
 ### Environment
-- conda create --name 432Hz python=3.7
+- conda create --name 432Hz python=3.11
 
 - pip install numpy
 
