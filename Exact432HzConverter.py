@@ -277,17 +277,19 @@ def ffmpeg_pitch_transform(filename, new_filename, target_sampling_rate, target_
     original_sampling_rate = int(info['sample_rate'])
     print(f"Original Sampling Rate: {original_sampling_rate} Hz")
 
-    # Calculate the 432Hz pitch ratio
+    # Calculate the 432Hz pitch ratio and the compensation tempo ratio
     print("Input Tone:", max_freq, "Hz")
     pitch_ratio = 432.0 / max_freq
-    print(f"Using Pitch Ratio: {pitch_ratio} with rubberband filter to convert without changing duration...")
+    tempo_ratio = 1.0 / pitch_ratio
+    print(f"Using Pitch Ratio: {pitch_ratio} and Tempo Ratio: {tempo_ratio} to convert without changing duration...")
 
     # FFmpeg command for pitch adjustment without changing duration
-    # The rubberband filter provides high-quality pitch shifting
+    # asetrate changes both pitch and speed. 
+    # atempo restores the original speed (duration).
     ffmpeg_command = [
         "ffmpeg",
         "-i", filename,  # Input file
-        "-af", f"rubberband=pitch={pitch_ratio},aresample={target_sampling_rate}",  # High-quality pitch shift and resample
+        "-af", f"asetrate={original_sampling_rate}*{pitch_ratio},atempo={tempo_ratio},aresample={target_sampling_rate}",  # Adjust pitch, restore tempo, and resample
         "-b:a", str(target_bitrate),  # Set target bitrate
         "-f", target_format,  # Output format
         new_filename  # Output file
