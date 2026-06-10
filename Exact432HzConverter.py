@@ -271,6 +271,56 @@ def ffmpeg_speed_transform(filename, new_filename, target_sampling_rate, target_
     except Exception as e:
         print(f"Error during conversion: {e}")
 
+def ffmpeg_pitch_transform(filename, new_filename, target_sampling_rate, target_bitrate, max_freq=440, target_format="mp3"):
+    # Get the original sampling rate of the audio
+    info = mediainfo(filename)
+    original_sampling_rate = int(info['sample_rate'])
+    print(f"Original Sampling Rate: {original_sampling_rate} Hz")
+
+    # Calculate the 432Hz pitch ratio
+    print("Input Tone:", max_freq, "Hz")
+    pitch_ratio = 432.0 / max_freq
+    print(f"Using Pitch Ratio: {pitch_ratio} with rubberband filter to convert without changing duration...")
+
+    # FFmpeg command for pitch adjustment without changing duration
+    # The rubberband filter provides high-quality pitch shifting
+    ffmpeg_command = [
+        "ffmpeg",
+        "-i", filename,  # Input file
+        "-af", f"rubberband=pitch={pitch_ratio},aresample={target_sampling_rate}",  # High-quality pitch shift and resample
+        "-b:a", str(target_bitrate),  # Set target bitrate
+        "-f", target_format,  # Output format
+        new_filename  # Output file
+    ]
+
+    print("Executing FFmpeg command with below-normal priority:", " ".join(ffmpeg_command))
+
+    try:
+        # Launch the FFmpeg process
+        kwargs = {}
+        if os.name == 'nt':
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+
+        process = subprocess.Popen(ffmpeg_command, **kwargs)
+
+        # Use psutil to set the process priority to below normal
+        p = psutil.Process(process.pid)
+        if os.name == 'nt':
+            p.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            p.nice(10)  # Standard nice value for below normal priority on Unix-like systems
+
+        # Wait for the process to complete
+        process.wait()
+
+        if process.returncode == 0:
+            print(f"Pitch conversion successful! Saved to {new_filename}")
+        else:
+            print(f"FFmpeg exited with non-zero code: {process.returncode}")
+
+    except Exception as e:
+        print(f"Error during pitch conversion: {e}")
+
 def Convert(selected_item):
     index=FilesTreeview.set(selected_item, column="id")
     index=int(index)
@@ -282,6 +332,7 @@ def Convert(selected_item):
         TargetBitrate=BitrateComboBox.get()
         TargetSamplingRate=SamplingRateComboBox.get()
         TargetFormat=FormatComboBox.get()
+        TargetTransformMode=TransformModeComboBox.get()
         
         head_tail = os.path.split(Filename)
         folder=head_tail[0]
@@ -381,7 +432,10 @@ def Convert(selected_item):
         # new_song.export(new_Filename, format=TargetFormat, bitrate=str(TargetBitrate))
         
         # new code to use ffmpeg instead:
-        ffmpeg_speed_transform(Filename, new_Filename, TargetSamplingRate, TargetBitrate, Tone, TargetFormat)
+        if TargetTransformMode == "Pitch":
+            ffmpeg_pitch_transform(Filename, new_Filename, TargetSamplingRate, TargetBitrate, Tone, TargetFormat)
+        else:
+            ffmpeg_speed_transform(Filename, new_Filename, TargetSamplingRate, TargetBitrate, Tone, TargetFormat)
 
         Status="Converted"
         FilesTreeview.item(selected_item, values=(index, Filename, Sampling_Rate, BitrateStr, ToneStr, Status))
@@ -609,8 +663,12 @@ Stop_Flag=False
 
 # Select the folder
 root = tk.Tk()
-root.title('Exact 432Hz Converter v1.2')
-root.geometry('900x500')
+root.title('Exact 432Hz Converter v1.3.0')
+try:
+    root.iconbitmap('Exact432Hz.ico')
+except Exception as e:
+    print(f"Icon file not found or could not be loaded: {e}")
+root.geometry('1000x500')
 #root.filename = filedialog.askdirectory()
 #folder_selected = root.filename
 
@@ -653,6 +711,9 @@ ToneLabel.grid(row=2,column=2,padx=10,pady=0)
 FormatLabel = tk.Label(root, text='Output Format')
 FormatLabel.grid(row=2,column=3,padx=10,pady=0)
 
+TransformModeLabel = tk.Label(root, text='Transform Mode')
+TransformModeLabel.grid(row=2,column=4,padx=10,pady=0)
+
 SamplingRateComboBox = ttk.Combobox(root, values=["Same", "44100", "48000", "96000", "192000"])
 SamplingRateComboBox.current(0)
 SamplingRateComboBox.grid(row=3,column=0,padx=10,pady=0)
@@ -669,6 +730,10 @@ FormatComboBox = ttk.Combobox(root, values=["Same", "flac", "mp3", "wav"])
 FormatComboBox.current(0)
 FormatComboBox.grid(row=3,column=3,padx=10,pady=0)
 
+TransformModeComboBox = ttk.Combobox(root, values=["Pitch", "Speed"])
+TransformModeComboBox.current(0)
+TransformModeComboBox.grid(row=3,column=4,padx=10,pady=0)
+
 columns = ('id', 'filename', 'sampling_rate', 'bitrate', 'tone', 'status')
 FilesTreeview = ttk.Treeview(root, columns=columns, show='headings',height=14)
 FilesTreeview.heading('id', text='ID')
@@ -683,7 +748,7 @@ FilesTreeview.heading('tone', text='Tone')
 FilesTreeview.column('tone',width=80,anchor='w',stretch=NO)
 FilesTreeview.heading('status', text='Status')
 FilesTreeview.column('status',width=100,anchor='w',stretch=NO)
-FilesTreeview.grid(row=4,column=0,columnspan=4,padx=0,pady=10)
+FilesTreeview.grid(row=4,column=0,columnspan=5,padx=0,pady=10)
 
 FileTreeviewVerticalScrlbar = ttk.Scrollbar(root, orient ="vertical", command = FilesTreeview.yview)
 FileTreeviewVerticalScrlbar.grid(row=4,column=5,padx=0,pady=10,sticky="nsew")
