@@ -40,3 +40,13 @@
 	3. Calculate the sum of each location in FFT data.
 3. Find the max sum of each Freq.
 4. Output final maxFreq which is the current Tone frequency.
+
+---
+
+## Support
+
+<div align="center">
+  <a href="https://buymeacoffee.com/arcton" target="_blank">
+    <img src="buymeacoffee.jpg" alt="Buy Me A Coffee" width="360">
+  </a>
+</div>
